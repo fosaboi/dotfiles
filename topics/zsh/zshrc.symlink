@@ -41,3 +41,6 @@ command -v direnv >/dev/null && eval "$(direnv hook zsh)"
 [[ -f /opt/homebrew/opt/fzf/shell/completion.zsh ]] && source /opt/homebrew/opt/fzf/shell/completion.zsh
 
 unset f
+
+# Local configuration - kept out of version control
+[[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
