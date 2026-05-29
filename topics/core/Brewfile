@@ -1,6 +1,7 @@
 brew "git"
 brew "gh"
 brew "fzf"
+brew "lazygit"
 brew "ripgrep"
 brew "fd"
 brew "bat"
