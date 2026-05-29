@@ -20,7 +20,7 @@ For a minimal install, you can pass specific topics to `./install.sh`:
 <!-- TOPICS_START -->
 | Topic | Features | Tools/Apps |
 | :--- | :--- | :--- |
-| **apps** |  📦 Brew | zed, obsidian, lazygit |
+| **apps** |  📦 Brew | zed, obsidian |
 | **core** |  📦 Brew 🐚 Zsh | git, gh, fzf, ripgrep, fd, ... |
 | **git** |  🐚 Zsh 🔗 Link | Config |
 | **obsidian** |  🐚 Zsh | Aliases |
