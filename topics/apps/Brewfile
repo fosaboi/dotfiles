@@ -1,2 +1,3 @@
 cask "zed"
 cask "obsidian"
+cask "lazygit"
