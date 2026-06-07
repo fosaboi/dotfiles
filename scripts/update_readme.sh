@@ -1,98 +1,106 @@
 #!/usr/bin/env bash
-# scripts/update_readme.sh - Automatically updates README.md with tables of dotfile topics and skills
+# scripts/update_readme.sh - Update README.md topic and skill tables
+set -euo pipefail
 
-# Get dotfiles root
 DOTFILES_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 README="$DOTFILES_DIR/README.md"
 TOPICS_DIR="$DOTFILES_DIR/topics"
 SKILLS_DIR="$DOTFILES_DIR/skills"
 
-# Check if markers exist in README
-if ! grep -q "<!-- TOPICS_START -->" "$README" || ! grep -q "<!-- TOPICS_END -->" "$README"; then
-    echo "Error: markers <!-- TOPICS_START --> and <!-- TOPICS_END --> not found in $README"
-    exit 1
-fi
-if ! grep -q "<!-- SKILLS_START -->" "$README" || ! grep -q "<!-- SKILLS_END -->" "$README"; then
-    echo "Error: markers <!-- SKILLS_START --> and <!-- SKILLS_END --> not found in $README"
-    exit 1
-fi
+TMP="$(mktemp "$README.XXXXXX")"
+trap 'rm -f "$TMP"' EXIT
 
-# Generate the table header
-TABLE="| Topic | Features | Tools/Apps |\n| :--- | :--- | :--- |"
+# Replace content between <!-- TAG_START --> and <!-- TAG_END --> markers
+replace_section() {
+    local file="$1" tag="$2" content="$3"
+    local start="<!-- ${tag}_START -->" end="<!-- ${tag}_END -->"
 
-# Iterate through topics
-for topic in $(ls "$TOPICS_DIR" | sort); do
-    TOPIC_PATH="$TOPICS_DIR/$topic"
-    [[ -d "$TOPIC_PATH" ]] || continue
-
-    FEATURES=""
-    TOOLS=""
-
-    # Detect features
-    [[ -f "$TOPIC_PATH/Brewfile" ]] && FEATURES="$FEATURES 📦 Brew"
-    [[ -n $(ls "$TOPIC_PATH"/*.zsh 2>/dev/null) ]] && FEATURES="$FEATURES 🐚 Zsh"
-    [[ -n $(ls "$TOPIC_PATH"/*.symlink 2>/dev/null) ]] && FEATURES="$FEATURES 🔗 Link"
-
-    # Extract tools from Brewfile
-    if [[ -f "$TOPIC_PATH/Brewfile" ]]; then
-        # Get up to 5 items, removing quotes and 'brew ' or 'cask '
-        TOOLS=$(grep -E '^(brew|cask)' "$TOPIC_PATH/Brewfile" | head -n 5 | sed -E "s/^(brew|cask) //; s/\"//g" | paste -sd "," - | sed 's/,/, /g')
-        [[ $(grep -E '^(brew|cask)' "$TOPIC_PATH/Brewfile" | wc -l) -gt 5 ]] && TOOLS="$TOOLS, ..."
-    else
-        # Fallback to key aliases or files
-        [[ -f "$TOPIC_PATH/aliases.zsh" ]] && TOOLS="Aliases"
-        [[ -n $(ls "$TOPIC_PATH"/*.symlink 2>/dev/null) ]] && TOOLS="Config"
+    if ! grep -q "$start" "$file" || ! grep -q "$end" "$file"; then
+        echo "Error: markers $start / $end not found in $file" >&2
+        exit 1
     fi
 
-    # Append row
-    TABLE="$TABLE\n| **$topic** | $FEATURES | $TOOLS |"
-done
+    {
+        sed -n "1,/$start/p" "$file"
+        printf '%s\n' "$content"
+        sed -n "/$end/,\$p" "$file"
+    } > "$TMP"
+    mv "$TMP" "$file"
+    TMP="$(mktemp "$README.XXXXXX")"
+}
 
-# Generate skills table
-SKILLS_TABLE="| Skill | Description |\n| :--- | :--- |"
+has_files() { compgen -G "$1" >/dev/null 2>&1; }
 
-if [[ -d "$SKILLS_DIR" ]]; then
+# -- Topics table --
+topics_table() {
+    printf '| Topic | Installs |\n'
+    printf '| :--- | :--- |\n'
+
+    for topic_path in "$TOPICS_DIR"/*/; do
+        [[ -d "$topic_path" ]] || continue
+        local topic
+        topic="$(basename "$topic_path")"
+
+        local parts=()
+
+        # Brew packages
+        if [[ -f "$topic_path/Brewfile" ]]; then
+            local pkgs
+            pkgs=$(grep -E '^(brew|cask)' "$topic_path/Brewfile" | sed -E 's/^(brew|cask) "//; s/".*//' | paste -sd ',' - | sed 's/,/, /g')
+            [[ -n "$pkgs" ]] && parts+=("$pkgs")
+        fi
+
+        # Symlinks
+        if has_files "$topic_path/*.symlink"; then
+            local links=()
+            for f in "$topic_path"/*.symlink; do
+                links+=("\`$(basename "$f" .symlink)\`")
+            done
+            parts+=("$(IFS=', '; echo "${links[*]}")")
+        fi
+
+        # Zsh files
+        if has_files "$topic_path/*.zsh"; then
+            local zsh_files=()
+            for f in "$topic_path"/*.zsh; do
+                zsh_files+=("\`$(basename "$f")\`")
+            done
+            parts+=("$(IFS=', '; echo "${zsh_files[*]}")")
+        fi
+
+        local installs=""
+        [[ ${#parts[@]} -gt 0 ]] && installs=$(IFS='|'; printf '%s' "${parts[*]}" | sed 's/|/ · /g')
+
+        printf '| **%s** | %s |\n' "$topic" "$installs"
+    done
+}
+
+# -- Skills table --
+skills_table() {
+    printf '| Skill | Description |\n'
+    printf '| :--- | :--- |\n'
+
+    [[ -d "$SKILLS_DIR" ]] || return
+
     for skill_dir in "$SKILLS_DIR"/*/; do
         [[ -d "$skill_dir" ]] || continue
-        SKILL_MD="$skill_dir/SKILL.md"
-        [[ -f "$SKILL_MD" ]] || continue
+        local skill_md="$skill_dir/SKILL.md"
+        [[ -f "$skill_md" ]] || continue
 
-        # Extract name and description from YAML frontmatter (first block only)
-        NAME=$(awk '/^---$/{if(found) exit; found=1; next} found && /^name:/{sub(/^name: */, ""); print; exit}' "$SKILL_MD")
-        
-        # Extract description - get lines after 'description:' in first block only
-        DESCRIPTION=$(awk '
-        /^---$/{if(found) exit; found=1; next}
-        found && /^description:/{desc=1; next}
-        desc && /^---$/{exit}
-        desc && /^$/{exit}
-        desc{print}
-        ' "$SKILL_MD" | sed 's/^ *//;s/^>- //;s/^ *//' | tr '\n' ' ' | sed 's/  */ /g; s/^ *//; s/ *$//')
+        local name description
+        name="$(basename "$skill_dir")"
+        description=$(awk '
+            /^---$/ { if(f) exit; f=1; next }
+            f && /^description:/ { d=1; next }
+            d && (/^[a-z]/ || /^---$/ || /^$/) { exit }
+            d { print }
+        ' "$skill_md" | sed 's/^ *//; s/^>- //' | tr '\n' ' ' | sed 's/  */ /g; s/^ *//; s/ *$//')
 
-        SKILLS_TABLE="$SKILLS_TABLE\n| **$NAME** | $DESCRIPTION |"
+        printf '| `%s` | %s |\n' "$name" "$description"
     done
-fi
+}
 
-# Use temporary files for safely replacing the content
-START_MARKER="<!-- TOPICS_START -->"
-END_MARKER="<!-- TOPICS_END -->"
+replace_section "$README" "TOPICS" "$(topics_table)"
+replace_section "$README" "SKILLS" "$(skills_table)"
 
-# Replace topics table
-{
-    sed -n "1,/$START_MARKER/p" "$README"
-    echo -e "$TABLE"
-    sed -n "/$END_MARKER/,\$p" "$README"
-} > "$README.tmp"
-
-# Replace skills table
-START_MARKER="<!-- SKILLS_START -->"
-END_MARKER="<!-- SKILLS_END -->"
-{
-    sed -n "1,/$START_MARKER/p" "$README.tmp"
-    echo -e "$SKILLS_TABLE"
-    sed -n "/$END_MARKER/,\$p" "$README.tmp"
-} > "$README.tmp2"
-
-mv "$README.tmp2" "$README"
-rm -f "$README.tmp"
-echo "✅ README.md updated."
+echo "README.md updated."
