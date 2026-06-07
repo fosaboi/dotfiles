@@ -14,7 +14,7 @@ alias du="du -sh"
 alias mkdir="mkdir -p"
 
 # Editor
-alias c="cursor ."
+
 alias z="zed ."
 
 # Knowledge capture
