@@ -1,2 +1,4 @@
 cask "zed"
 cask "obsidian"
+cask "ghostty"
+cask "nikitabobko/tap/aerospace"
