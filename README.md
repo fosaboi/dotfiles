@@ -21,7 +21,7 @@ For a minimal install, you can pass specific topics to `./install.sh`:
 | Topic | Installs |
 | :--- | :--- |
 | **apps** | zed, obsidian, ghostty, nikitabobko/tap/aerospace |
-| **core** | git, gh, fzf, lazygit, ripgrep, fd, bat, eza, zoxide, jq, yq, direnv, tldr, htop, starship · `aliases.zsh`,`path.zsh` |
+| **core** | git, gh, fzf, lazygit, ripgrep, fd, bat, eza, zoxide, jq, yq, direnv, tldr, htop, starship, tree · `aliases.zsh`,`path.zsh` |
 | **git** | `gitconfig`,`gitignore_global` · `aliases.zsh` |
 | **obsidian** | `aliases.zsh` |
 | **python** | uv, pre-commit · `setup.zsh` |
