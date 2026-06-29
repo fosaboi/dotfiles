@@ -25,7 +25,6 @@ For a minimal install, you can pass specific topics to `./install.sh`:
 | **git** | `gitconfig`,`gitignore_global` · `aliases.zsh` |
 | **obsidian** | `aliases.zsh` |
 | **python** | uv, pre-commit · `setup.zsh` |
-| **ssh** |  |
 | **starship** | `starship.toml` |
 | **zsh** | `zshrc` · `completion.zsh` |
 <!-- TOPICS_END -->
