@@ -20,11 +20,12 @@ For a minimal install, you can pass specific topics to `./install.sh`:
 <!-- TOPICS_START -->
 | Topic | Installs |
 | :--- | :--- |
-| **apps** | zed, obsidian, ghostty, nikitabobko/tap/aerospace |
-| **core** | git, gh, fzf, lazygit, ripgrep, fd, bat, eza, zoxide, jq, yq, direnv, tldr, htop, starship, tree · `aliases.zsh`,`path.zsh` |
+| **apps** | zed, obsidian, ghostty, nikitabobko/tap/aerospace, secretive |
+| **core** | git, gh, fzf, lazygit, ripgrep, fd, bat, eza, zoxide, jq, yq, direnv, tldr, htop, starship, tree, secretspec · `aliases.zsh`,`path.zsh` |
 | **git** | `gitconfig`,`gitignore_global` · `aliases.zsh` |
 | **obsidian** | `aliases.zsh` |
 | **python** | uv, pre-commit · `setup.zsh` |
+| **ssh** |  |
 | **starship** | `starship.toml` |
 | **zsh** | `zshrc` · `completion.zsh` |
 <!-- TOPICS_END -->
